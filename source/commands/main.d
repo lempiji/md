@@ -68,10 +68,10 @@ struct DefaultCommand
         foreach (key, value; blocks)
         {
             totalCount++;
-            if (quiet.isNull || !quiet.get())
+            if (!quiet.get(false))
                 writeln("begin: ", key);
             scope (exit)
-                if (quiet.isNull || !quiet.get())
+                if (!quiet.get(false))
                     writeln("end: ", key);
 
             const status = evaluate(value.data, packageName, BlockType.Single, verbose.isTrue);
@@ -81,30 +81,30 @@ struct DefaultCommand
         foreach (i, source; singleBlocks)
         {
             totalCount++;
-            if (quiet.isNull || !quiet.get())
+            if (!quiet.get(false))
                 writeln("begin single: ", i);
             scope (exit)
-                if (quiet.isNull || !quiet.get())
+                if (!quiet.get(false))
                     writeln("end single: ", i);
 
             const status = evaluate(source, packageName, BlockType.Single, verbose.isTrue);
             errorCount += status != 0;
         }
-        
+
         foreach (i, source; globalBlocks)
         {
             totalCount++;
-            if (quiet.isNull || !quiet.get())
+            if (!quiet.get(false))
                 writeln("begin global :", i);
             scope (exit)
-                if (quiet.isNull || !quiet.get())
+                if (!quiet.get(false))
                     writeln("end global :", i);
 
             const status = evaluate(source, packageName, BlockType.Global, verbose.isTrue);
             errorCount += status != 0;
         }
 
-        if (quiet.isNull || !quiet.get())
+        if (!quiet.get(false))
             UserIO.logInfof("Total blocks: %d", totalCount);
         if (errorCount != 0)
         {
@@ -112,7 +112,7 @@ struct DefaultCommand
             return 1;
         }
 
-        if (quiet.isNull || !quiet.get())
+        if (!quiet.get(false))
             UserIO.logInfof("Success all blocks.");
         return 0;
     }
@@ -287,10 +287,12 @@ int evaluate(string source, string packageName, BlockType type, bool verbose)
         import std.format : format;
         import std.file : getcwd;
 
-        header = format!`/+ dub.sdl:
-    dependency "%s" path="%s"
-+/
-`(packageName, escapeSystemPath(getcwd()));
+        header = format!"/+ dub.sdl:\n    dependency \"%s\" path=\"%s\"\n+/"(packageName,
+                escapeSystemPath(getcwd()));
+    }
+    else
+    {
+        header = "/+ dub.sdl:\n +/";
     }
 
     import std.file : tempDir, write, remove, mkdirRecurse, chdir;
