@@ -62,39 +62,58 @@ struct DefaultCommand
             }
         }
 
+        // evaluate all
+        size_t totalCount;
+        size_t errorCount;
         foreach (key, value; blocks)
         {
+            totalCount++;
             if (quiet.isNull || !quiet.get())
                 writeln("begin: ", key);
             scope (exit)
                 if (quiet.isNull || !quiet.get())
                     writeln("end: ", key);
 
-            evaluate(value.data, packageName, BlockType.Single, verbose.isTrue);
+            const status = evaluate(value.data, packageName, BlockType.Single, verbose.isTrue);
+            errorCount += status != 0;
         }
 
         foreach (i, source; singleBlocks)
         {
+            totalCount++;
             if (quiet.isNull || !quiet.get())
                 writeln("begin single: ", i);
             scope (exit)
                 if (quiet.isNull || !quiet.get())
                     writeln("end single: ", i);
 
-            evaluate(source, packageName, BlockType.Single, verbose.isTrue);
+            const status = evaluate(source, packageName, BlockType.Single, verbose.isTrue);
+            errorCount += status != 0;
         }
         
         foreach (i, source; globalBlocks)
         {
+            totalCount++;
             if (quiet.isNull || !quiet.get())
                 writeln("begin global :", i);
             scope (exit)
                 if (quiet.isNull || !quiet.get())
                     writeln("end global :", i);
 
-            evaluate(source, packageName, BlockType.Global, verbose.isTrue);
+            const status = evaluate(source, packageName, BlockType.Global, verbose.isTrue);
+            errorCount += status != 0;
         }
 
+        if (quiet.isNull || !quiet.get())
+            UserIO.logInfof("Total blocks: %d", totalCount);
+        if (errorCount != 0)
+        {
+            UserIO.logErrorf("Errors: %d", errorCount);
+            return 1;
+        }
+
+        if (quiet.isNull || !quiet.get())
+            UserIO.logInfof("Success all blocks.");
         return 0;
     }
 }
@@ -257,7 +276,7 @@ enum BlockType
     Global,
 }
 
-void evaluate(string source, string packageName, BlockType type, bool verbose)
+int evaluate(string source, string packageName, BlockType type, bool verbose)
 {
     import std.stdio : stdin, stdout, stderr;
     import std.process : spawnProcess, wait;
@@ -322,7 +341,7 @@ void evaluate(string source, string packageName, BlockType type, bool verbose)
         writeln("dub args: ", args);
 
     auto result = spawnProcess(args, stdin, stdout);
-    wait(result);
+    return wait(result);
 }
 
 string loadCurrentProjectName()

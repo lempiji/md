@@ -134,7 +134,7 @@ tempディレクトリに `.md` ディレクトリを作り、dubのシングル
 
 __UFCSが解決されず動かない例__
 
-```d name=ufcs_error
+```d disabled
 auto sum(R)(R range)
 {
     import std.range : ElementType;
