@@ -1,0 +1,6 @@
+name "md"
+description "A tool for executing sources in Markdown."
+authors "lempiji"
+license "MIT"
+dependency "jcli" version="~>0.12.0"
+dependency "commonmark-d" version="~>1.0.8"

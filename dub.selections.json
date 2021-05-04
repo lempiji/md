@@ -1,0 +1,9 @@
+{
+	"fileVersion": 1,
+	"versions": {
+		"commonmark-d": "1.0.8",
+		"jcli": "0.12.0",
+		"jioc": "0.2.0",
+		"silly": "1.0.2"
+	}
+}
