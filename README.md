@@ -35,7 +35,7 @@ __block 2__
 writeln(message); // Hello, Markdown!
 ```
 
-### Disabled
+### Disabled block
 
 Code blocks specified as `disabled` will not be executed, as shown below.
 
