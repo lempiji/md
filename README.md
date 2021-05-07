@@ -1,23 +1,27 @@
 # md
 
-Markdownのコードブロックを実行するツールです。
+[日本語](README.ja.md)
 
-READMEに書かれたサンプルが動作するかどうかをCIなどで確かめることができます。
+This is a tool to run Markdown code blocks.
 
-## 実行方法
+This can be used by CI to guarantee that the samples written in the README will work.
 
-`dub run md -- README.md` といった形式で実行できます。
+## Usage
 
-この `README.md` も実行可能です。
+Run it as `dub fetch md` and `dub run md -- README.md`
+
+Also, this `README.md` is also executable.
 
 
-## 機能概要
+## Features
 
-言語が `d` と指定されているコードブロックが実行されます。
+The code block whose language is specified as `d` or `D` will be executed.
 
-以下のように複数のブロックがある場合、それらが結合されて実行されます。
+### Combine blocks
 
-__1ブロック目__
+If there are multiple blocks as shown below, they will be combined and executed.
+
+__block 1__
 
 ```d
 import std;
@@ -25,31 +29,31 @@ import std;
 auto message = "Hello, " ~ "Markdown!";
 ```
 
-__2ブロック目__
+__block 2__
 
 ```d
 writeln(message); // Hello, Markdown!
 ```
 
-### 除外設定
+### Disabled
 
-以下のように `disabled` と指定したコードブロックは実行されません。
+Code blocks specified as `disabled` will not be executed, as shown below.
 
 ~~~
 ```d disabled
 ```
 ~~~
 
-__実行されないブロック__
+__disabled code block__
 
 ```d disabled
 throw new Exception("disabled");
 ```
 
-### 名前指定
+### Named block
 
-コードブロックに対して、以下のような名前を指定することで独立したスコープを与えることができます。
-離れた位置に書かれていても、同じ名前を与えると1つのブロックとして結合されます。
+Can give an independent scope to a block of code by giving it a name like the following.
+Even if they are written separately, they will be combined like a block if they have the same name.
 
 ~~~
 ```d name=test
@@ -63,18 +67,18 @@ auto buf = iota(10).array();
 writeln(buf);
 ```
 
-`name` 指定がない場合は `main` という名前として扱われます。
+If `name` is not specified, it is treated as the name `main`.
 
-### 独立実行
+### Isolate block
 
-1つのコードブロックを他のブロックと結合せず、独立して実行させるためには `single` という属性を付与します。
+To make a single block of code run independently without being combined with other blocks, give it the attribute `single`.
 
 ~~~
 ```d single
 ```
 ~~~
 
-__他のブロックと結合しない例__
+__single block__
 
 ```d single
 import std;
@@ -83,11 +87,11 @@ auto message = "single code block";
 writeln(message);
 ```
 
-### 既定のパッケージ参照
+### Current package reference
 
-ライブラリのREADMEなどをサポートするため、実行時のカレントディレクトリがdubパッケージであった場合、自動的に `dub` プロジェクトとしての依存関係が追加されます。
+If the current directory is a dub package, the dependency will be automatically added.
 
-たとえば、 `dub.sdl` と同じディレクトリにある本READMEの場合、内部で使っている `commands.main` を `import` することができます。
+For example, if this README is in the same directory as `md/dub.sdl`, then can import `commands.main` of `md`.
 
 ```d name=package_ref
 import commands.main;
@@ -96,18 +100,18 @@ import std.stdio;
 writeln("current package: ", loadCurrentProjectName());
 ```
 
-### グローバル宣言
+### Global
 
-通常のコードブロックはサンプル用の記述を想定し、 `void main() {}` の中に書かれたものとして実行されます。（前後に `void main() {` と `}` が補われたソースが生成されます）
+The normal code blocks are executed as if they were written in `void main() {}`. The source will be generated with `void main() {` and `}` appended before and after.
 
-コードブロックを1つのソースファイルとして解釈させる場合、コードブロックに `global` という設定を追加します。これは `single` を指定した場合と同様、他のコードブロックとは結合されません。
+If you want the code block to be interpreted as a single source file, you can add a `global` attribute to the code block, which will not be combined with other code blocks as with the `single` attribute.
 
 ~~~
 ```d global
 ```
 ~~~
 
-__1つのソースとして実行される例__
+__single file__
 
 ```d global
 import std;
@@ -119,20 +123,28 @@ void main()
 ```
 
 
-## その他
+## Othres
 
-### 実行時の仕組み
+### How it works
 
-tempディレクトリに `.md` ディレクトリを作り、dubのシングルファイル形式のソースを生成、 `dub run --single md_xxx.md` といったコマンドで実行します。
+Create a `.md` directory in the temp directory, generate the source in dub single file format, and run it with a command like `dub run --single md_xxx.md`.
 
-### 制限
+It also automatically adds the following comment to the beginning of the source to achieve default package references.
+
+```d disabled
+/+ dub.sdl:
+    dependency "md" path="C:\\work\md"
+ +/
+```
+
+### Limits
 
 #### UFCS
 
-通常のコードブロックでは、 `void main() {}` で囲んだソースを生成します。
-関数定義がグローバル関数ではないため、UFCSは動作しません
+A normal code block will generate the source enclosed in `void main() {}`.
+UFCS will not work because the function definition is not a global function.
 
-__UFCSが解決されず動かない例__
+__this code doesn't work__
 
 ```d disabled
 auto sum(R)(R range)
@@ -152,9 +164,9 @@ auto arr = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 auto result = arr.sum();
 ```
 
-global設定を行い、main関数を適切に書くことで動作します。
+It works by setting the global attribute and writing the main function appropriately.
 
-__UFCSのためglobal指定を追加した例__
+__this code works__
 
 ```d global
 auto sum(R)(R range)
