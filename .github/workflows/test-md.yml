@@ -31,4 +31,5 @@ jobs:
     - name: 'Test README'
       run: |
         # Build the project, with its main file included, without unittests
-        dub run md --compiler=$DC
+        dub run md --compiler=$DC -- README.md
+        dub run md --compiler=$DC -- README.ja.md
