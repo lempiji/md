@@ -6,6 +6,8 @@ Markdownのコードブロックを実行するツールです。
 
 これを使うことで、READMEに書かれたサンプルが動作することをCIで保証することなどができます。
 
+サンプルリポジトリ: https://github.com/lempiji/sandbox-vuepress
+
 ## 実行方法
 
 `dub fetch md` および `dub run md -- README.md` といったコマンドで実行できます。

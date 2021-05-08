@@ -6,6 +6,8 @@ This is a tool to run Markdown code blocks.
 
 This can be used by CI to guarantee that the samples written in the README will work.
 
+Example repo: https://github.com/lempiji/sandbox-vuepress
+
 ## Usage
 
 Run it as `dub fetch md` and `dub run md -- README.md`
