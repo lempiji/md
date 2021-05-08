@@ -37,7 +37,7 @@ __block 2__
 writeln(message); // Hello, Markdown!
 ```
 
-### Disabled
+### Disabled block
 
 Code blocks specified as `disabled` will not be executed, as shown below.
 
@@ -71,7 +71,7 @@ writeln(buf);
 
 If `name` is not specified, it is treated as the name `main`.
 
-### Isolate block
+### Scoped block
 
 To make a single block of code run independently without being combined with other blocks, give it the attribute `single`.
 
