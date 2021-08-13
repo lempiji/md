@@ -12,7 +12,7 @@ Example repo: https://github.com/lempiji/sandbox-vuepress
 
 Run it as `dub fetch md` and `dub run md -- README.md`
 
-Also, this `README.md` is also executable.
+Also, this `README.md` is executable.
 
 
 ## Features
