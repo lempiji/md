@@ -12,15 +12,15 @@ import std.range;
 @CommandDefault("Execute code block in markdown.")
 struct DefaultCommand
 {
-    @CommandPositionalArg(0, "file", "Markdown file (.md)")
+    @ArgPositional("file", "Markdown file (.md)")
     Nullable!string file;
 
-    @CommandArgGroup("Options")
+    @ArgGroup("Options")
     {
-        @CommandNamedArg("quiet|q", "Only print warnings and errors")
+        @ArgNamed("quiet|q", "Only print warnings and errors")
         Nullable!bool quiet;
 
-        @CommandNamedArg("verbose|v", "Print diagnostic output")
+        @ArgNamed("verbose|v", "Print diagnostic output")
         Nullable!bool verbose;
     }
 
@@ -105,15 +105,15 @@ struct DefaultCommand
         }
 
         if (!quiet.get(false))
-            UserIO.logInfof("Total blocks: %d", totalCount);
+            stdout.writefln!"Total blocks: %d"(totalCount);
         if (errorCount != 0)
         {
-            UserIO.logErrorf("Errors: %d", errorCount);
+            stderr.writefln!"Errors: %d"(errorCount);
             return 1;
         }
 
         if (!quiet.get(false))
-            UserIO.logInfof("Success all blocks.");
+            stdout.writeln("Success all blocks.");
         return 0;
     }
 }
