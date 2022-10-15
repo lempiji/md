@@ -18,16 +18,18 @@ struct DefaultCommand
     @ArgGroup("Options")
     {
         @ArgNamed("quiet|q", "Only print warnings and errors")
-        Nullable!bool quiet;
+        @(ArgConfig.parseAsFlag)
+        bool quiet;
 
         @ArgNamed("verbose|v", "Print diagnostic output")
-        Nullable!bool verbose;
+        @(ArgConfig.parseAsFlag)
+        bool verbose;
     }
 
     int onExecute()
     {
         auto packageName = loadCurrentProjectName();
-        if (verbose.isTrue)
+        if (verbose)
             writeln("packageName: ", packageName);
 
         string filepath = !file.isNull ? file.get() : "README.md";
@@ -68,43 +70,43 @@ struct DefaultCommand
         foreach (key, value; blocks)
         {
             totalCount++;
-            if (!quiet.get(false))
+            if (!quiet)
                 writeln("begin: ", key);
             scope (exit)
-                if (!quiet.get(false))
+                if (!quiet)
                     writeln("end: ", key);
 
-            const status = evaluate(value.data, packageName, BlockType.Single, verbose.isTrue);
+            const status = evaluate(value.data, packageName, BlockType.Single, verbose);
             errorCount += status != 0;
         }
 
         foreach (i, source; singleBlocks)
         {
             totalCount++;
-            if (!quiet.get(false))
+            if (!quiet)
                 writeln("begin single: ", i);
             scope (exit)
-                if (!quiet.get(false))
+                if (!quiet)
                     writeln("end single: ", i);
 
-            const status = evaluate(source, packageName, BlockType.Single, verbose.isTrue);
+            const status = evaluate(source, packageName, BlockType.Single, verbose);
             errorCount += status != 0;
         }
 
         foreach (i, source; globalBlocks)
         {
             totalCount++;
-            if (!quiet.get(false))
+            if (!quiet)
                 writeln("begin global :", i);
             scope (exit)
-                if (!quiet.get(false))
+                if (!quiet)
                     writeln("end global :", i);
 
-            const status = evaluate(source, packageName, BlockType.Global, verbose.isTrue);
+            const status = evaluate(source, packageName, BlockType.Global, verbose);
             errorCount += status != 0;
         }
 
-        if (!quiet.get(false))
+        if (!quiet)
             stdout.writefln!"Total blocks: %d"(totalCount);
         if (errorCount != 0)
         {
@@ -112,7 +114,7 @@ struct DefaultCommand
             return 1;
         }
 
-        if (!quiet.get(false))
+        if (!quiet)
             stdout.writeln("Success all blocks.");
         return 0;
     }
@@ -394,12 +396,4 @@ string escapeSystemPath(string path)
     {
         return path;
     }
-}
-
-bool isTrue(in Nullable!bool value)
-{
-    if (value.isNull)
-        return false;
-
-    return value.get();
 }
