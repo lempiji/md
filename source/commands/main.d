@@ -355,9 +355,12 @@ int evaluate(string source, string[] dubInstructions, BlockType type, bool verbo
         sourceFile.flush();
     }
 
-    string[] args = [
-        "dub", "run", "--quiet", "--single", "--root", workDir, filename
-    ];
+    string[] args = verbose ? [
+            "dub", "run", "--single", "--root", workDir, filename
+        ]
+        : [
+            "dub", "run", "--quiet", "--single", "--root", workDir, filename
+        ];
     if (verbose)
         writeln("dub args: ", args);
 
