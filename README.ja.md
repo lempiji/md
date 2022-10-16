@@ -14,19 +14,14 @@ Markdownのコードブロックを実行するツールです。
 
 この `README.md` も実行可能となっています。
 
-<!-- TODO: translate to Japanese -->
+なお、 `md` にコマンドライン引数を渡すことで、生成した D ソースファイルをどのように実行するか設定することもできます。
 
-You can configure how your generated D source file is run by passing in command line arguments to `md`:
+__ヘルプの参照方法__
 
 ```
 dub run md -- --help
 ```
 
-By default the package in the current working directory is added as DUB dependency. (using a `"path"` based dependency)
-
-It's possible to specify `--dubsdl "<instruction>"` to add a dub.sdl recipe line into the generated file. This option can be used multiple times to add multiple lines. Specifying this option disables the built-in CWD package dependency addition described above.
-
-It's possible to specify `-d <packageName>` or `-d <packageName>@<versionString>` such as `-d mir-ion@~>2.0.16` to add further dependencies. (long name: `--dependency`)
 
 ## 機能概要
 
@@ -104,7 +99,7 @@ writeln(message);
 
 ### 既定のパッケージ参照
 
-ライブラリのREADMEなどをサポートするため、実行時のカレントディレクトリがdubパッケージであった場合、自動的に `dub` プロジェクトとしての依存関係が追加されます。
+ライブラリのREADMEなどをサポートするため、実行時のカレントディレクトリがdubパッケージであった場合、自動的に `dub` プロジェクトとしての依存関係が追加されます。（これは `dub.sdl` に `path` ベースの `dependency` が追加されます）
 
 たとえば、 `dub.sdl` と同じディレクトリにある本READMEの場合、内部で使っている `commands.main` を `import` することができます。
 
@@ -114,6 +109,17 @@ import std.stdio;
 
 writeln("current package: ", loadCurrentProjectName());
 ```
+
+### 追加のパッケージ参照
+
+`-d <pakageName>` や `-d <pakageName>@<versionString>` （`-d mir-ion@~>2.0.16` など）の指定によって追加の依存関係を設定することもできます。（`-d` の正式名は `--dependency` です）
+
+
+### dub.sdlの直接設定
+
+`--dubsdl <instruction>` を指定すると、生成されるファイルに dub.sdl の行を直接追加することができます。このオプションは複数回指定することで複数の行を追加することもできます。
+このオプションを指定した場合、上記の「既定のパッケージ参照機能」が無効化され、参照が追加されなくなります。
+
 
 ### グローバル宣言
 

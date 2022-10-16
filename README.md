@@ -16,15 +16,12 @@ Also, this `README.md` is executable.
 
 You can configure how your generated D source file is run by passing in command line arguments to `md`:
 
+__show help__
+
 ```
 dub run md -- --help
 ```
 
-By default the package in the current working directory is added as DUB dependency. (using a `"path"` based dependency)
-
-It's possible to specify `--dubsdl "<instruction>"` to add a dub.sdl recipe line into the generated file. This option can be used multiple times to add multiple lines. Specifying this option disables the built-in CWD package dependency addition described above.
-
-It's possible to specify `-d <packageName>` or `-d <packageName>@<versionString>` such as `-d mir-ion@~>2.0.16` to add further dependencies. (long name: `--dependency`)
 
 ## Features
 
@@ -102,7 +99,7 @@ writeln(message);
 
 ### Current package reference
 
-If the current directory is a dub package, the dependency will be automatically added.
+If the current directory is a dub package, the dependency will be automatically added. (using a `"path"` based dependency)
 
 For example, if this README is in the same directory as `md/dub.sdl`, then can import `commands.main` of `md`.
 
@@ -112,6 +109,16 @@ import std.stdio;
 
 writeln("current package: ", loadCurrentProjectName());
 ```
+
+### Additional dependencies
+
+It's possible to specify `-d <packageName>` or `-d <packageName>@<versionString>` such as `-d mir-ion@~>2.0.16` to add further dependencies. (long name: `--dependency`)
+
+### Instruction to dub.sdl
+
+It's possible to specify `--dubsdl "<instruction>"` to add a dub.sdl recipe line into the generated file. This option can be used multiple times to add multiple lines.
+
+Specifying this option disables the built-in CWD package dependency addition described above.
 
 ### Global
 
