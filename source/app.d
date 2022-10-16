@@ -5,6 +5,5 @@ import jcli;
 
 int main(string[] args)
 {
-	auto executor = new CommandLineInterface!(commands.main);
-    return executor.parseAndExecute(args);
+	return executeSingleCommand!DefaultCommand(args[1 .. $]);
 }

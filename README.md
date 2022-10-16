@@ -14,6 +14,17 @@ Run it as `dub fetch md` and `dub run md -- README.md`
 
 Also, this `README.md` is executable.
 
+You can configure how your generated D source file is run by passing in command line arguments to `md`:
+
+```
+dub run md -- --help
+```
+
+By default the package in the current working directory is added as DUB dependency. (using a `"path"` based dependency)
+
+It's possible to specify `--dubsdl "<instruction>"` to add a dub.sdl recipe line into the generated file. This option can be used multiple times to add multiple lines. Specifying this option disables the built-in CWD package dependency addition described above.
+
+It's possible to specify `-d <packageName>` or `-d <packageName>@<versionString>` such as `-d mir-ion@~>2.0.16` to add further dependencies. (long name: `--dependency`)
 
 ## Features
 

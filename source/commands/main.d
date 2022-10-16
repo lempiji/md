@@ -2,12 +2,14 @@ module commands.main;
 
 import commonmarkd.md4c;
 import jcli;
+import std.algorithm;
 import std.array;
 import std.container.array : Array;
-import std.stdio;
-import std.typecons;
 import std.conv;
 import std.range;
+import std.stdio;
+import std.string;
+import std.typecons;
 
 @CommandDefault("Execute code block in markdown.")
 struct DefaultCommand
@@ -18,17 +20,47 @@ struct DefaultCommand
     @ArgGroup("Options")
     {
         @ArgNamed("quiet|q", "Only print warnings and errors")
-        Nullable!bool quiet;
+        @(ArgConfig.parseAsFlag)
+        bool quiet;
 
         @ArgNamed("verbose|v", "Print diagnostic output")
-        Nullable!bool verbose;
+        @(ArgConfig.parseAsFlag)
+        bool verbose;
+
+        @ArgNamed("dependency|d", "Adds a DUB dependency into the D source. May be either in format `name` (version \"*\") or `name@version` to download an exact version or version range.")
+        @(ArgConfig.aggregate | ArgConfig.optional)
+        string[] dubDependencies;
+
+        @ArgNamed("dubsdl", "Adds a dub.sdl package recipe line into the generated D source file.")
+        @(ArgConfig.aggregate | ArgConfig.optional)
+        string[] dubInstructions;
     }
 
     int onExecute()
     {
-        auto packageName = loadCurrentProjectName();
-        if (verbose.isTrue)
-            writeln("packageName: ", packageName);
+        if (!dubInstructions.length)
+        {
+            dubInstructions = [];
+            auto packageName = loadCurrentProjectName();
+            if (verbose)
+                writeln("packageName: ", packageName);
+            if (packageName.length)
+            {
+                import std.file : getcwd;
+
+                dubInstructions ~= format!`dependency "%s" path="%s"`(packageName,
+                    escapeSystemPath(getcwd()));
+            }
+        }
+
+        foreach (string depName; dubDependencies)
+        {
+            auto parts = depName.findSplit("@");
+            dubInstructions ~= format!`dependency "%s" version="%s"`(
+                parts[0],
+                parts[2].length ? parts[2] : "*"
+            );
+        }
 
         string filepath = !file.isNull ? file.get() : "README.md";
         auto result = parseMarkdown(filepath);
@@ -68,43 +100,43 @@ struct DefaultCommand
         foreach (key, value; blocks)
         {
             totalCount++;
-            if (!quiet.get(false))
+            if (!quiet)
                 writeln("begin: ", key);
             scope (exit)
-                if (!quiet.get(false))
+                if (!quiet)
                     writeln("end: ", key);
 
-            const status = evaluate(value.data, packageName, BlockType.Single, verbose.isTrue);
+            const status = evaluate(value.data, dubInstructions, BlockType.Single, verbose);
             errorCount += status != 0;
         }
 
         foreach (i, source; singleBlocks)
         {
             totalCount++;
-            if (!quiet.get(false))
+            if (!quiet)
                 writeln("begin single: ", i);
             scope (exit)
-                if (!quiet.get(false))
+                if (!quiet)
                     writeln("end single: ", i);
 
-            const status = evaluate(source, packageName, BlockType.Single, verbose.isTrue);
+            const status = evaluate(source, dubInstructions, BlockType.Single, verbose);
             errorCount += status != 0;
         }
 
         foreach (i, source; globalBlocks)
         {
             totalCount++;
-            if (!quiet.get(false))
+            if (!quiet)
                 writeln("begin global :", i);
             scope (exit)
-                if (!quiet.get(false))
+                if (!quiet)
                     writeln("end global :", i);
 
-            const status = evaluate(source, packageName, BlockType.Global, verbose.isTrue);
+            const status = evaluate(source, dubInstructions, BlockType.Global, verbose);
             errorCount += status != 0;
         }
 
-        if (!quiet.get(false))
+        if (!quiet)
             stdout.writefln!"Total blocks: %d"(totalCount);
         if (errorCount != 0)
         {
@@ -112,7 +144,7 @@ struct DefaultCommand
             return 1;
         }
 
-        if (!quiet.get(false))
+        if (!quiet)
             stdout.writeln("Success all blocks.");
         return 0;
     }
@@ -276,39 +308,23 @@ enum BlockType
     Global,
 }
 
-int evaluate(string source, string packageName, BlockType type, bool verbose)
+int evaluate(string source, string[] dubInstructions, BlockType type, bool verbose)
 {
-    import std.stdio : stdin, stdout, stderr;
-    import std.process : spawnProcess, wait;
-
-    string header;
-    if (packageName)
-    {
-        import std.format : format;
-        import std.file : getcwd;
-
-        header = format!"/+ dub.sdl:\n    dependency \"%s\" path=\"%s\"\n+/"(packageName,
-                escapeSystemPath(getcwd()));
-    }
-    else
-    {
-        header = "/+ dub.sdl:\n +/";
-    }
-
-    import std.file : tempDir, write, remove, mkdirRecurse, chdir;
+    import std.conv : text, to;
+    import std.digest : toHexString;
+    import std.digest.murmurhash : MurmurHash3;
+    import std.file : chdir, mkdirRecurse, remove, tempDir, write;
     import std.path : buildNormalizedPath;
-    import std : toHexString, to, text;
+    import std.process : spawnProcess, wait;
+    import std.stdio : stderr, stdin, stdout;
 
     auto workDir = buildNormalizedPath(tempDir(), ".md");
     mkdirRecurse(workDir);
 
-    import std.digest.murmurhash : MurmurHash3;
-    import std.string : representation;
-
     MurmurHash3!128 hasher;
     hasher.start();
     hasher.put(source.representation);
-    hasher.put(packageName.representation);
+    hasher.put(dubInstructions.join("\n").representation);
     auto hash = hasher.finish();
 
     auto moduleName = text("md_", hash.toHexString());
@@ -322,7 +338,10 @@ int evaluate(string source, string packageName, BlockType type, bool verbose)
 
     {
         auto sourceFile = File(tempFilePath, "w");
-        sourceFile.writeln(header);
+        sourceFile.writeln("/+ dub.sdl:");
+        foreach (instr; dubInstructions)
+            sourceFile.writeln(instr);
+        sourceFile.writeln("+/");
         if (type == BlockType.Single)
         {
             sourceFile.writeln("module ", moduleName, ";");
@@ -336,9 +355,12 @@ int evaluate(string source, string packageName, BlockType type, bool verbose)
         sourceFile.flush();
     }
 
-    string[] args = [
-        "dub", "run", "--quiet", "--single", "--root", workDir, filename
-    ];
+    string[] args = verbose ? [
+            "dub", "run", "--single", "--root", workDir, filename
+        ]
+        : [
+            "dub", "run", "--quiet", "--single", "--root", workDir, filename
+        ];
     if (verbose)
         writeln("dub args: ", args);
 
@@ -394,12 +416,4 @@ string escapeSystemPath(string path)
     {
         return path;
     }
-}
-
-bool isTrue(in Nullable!bool value)
-{
-    if (value.isNull)
-        return false;
-
-    return value.get();
 }
