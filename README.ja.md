@@ -115,7 +115,7 @@ writeln("current package: ", loadCurrentProjectName());
 `-d <pakageName>` や `-d <pakageName>@<versionString>` （`-d mir-ion@~>2.0.16` など）の指定によって追加の依存関係を設定することもできます。（`-d` の正式名は `--dependency` です）
 
 
-### dub.sdlの直接設定
+### dub.sdlの直接設定（テストされていません）
 
 `--dubsdl <instruction>` を指定すると、生成されるファイルに dub.sdl の行を直接追加することができます。このオプションは複数回指定することで複数の行を追加することもできます。
 このオプションを指定した場合、上記の「既定のパッケージ参照機能」が無効化され、参照が追加されなくなります。

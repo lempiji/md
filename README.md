@@ -114,7 +114,7 @@ writeln("current package: ", loadCurrentProjectName());
 
 It's possible to specify `-d <packageName>` or `-d <packageName>@<versionString>` such as `-d mir-ion@~>2.0.16` to add further dependencies. (long name: `--dependency`)
 
-### Instruction to dub.sdl
+### Instruction to dub.sdl (not tested)
 
 It's possible to specify `--dubsdl "<instruction>"` to add a dub.sdl recipe line into the generated file. This option can be used multiple times to add multiple lines.
 
