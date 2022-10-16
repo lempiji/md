@@ -10,6 +10,7 @@ md.a
 md.lib
 md-test-*
 *.exe
+*.pdb
 *.o
 *.obj
 *.lst
