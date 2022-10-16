@@ -387,7 +387,7 @@ string loadCurrentProjectName()
     {
         import std.regex : ctRegex, matchFirst;
 
-        enum pattern = ctRegex!"^name \"(\\w+)\"$";
+        enum pattern = ctRegex!`^name "([-\w]+)"$`;
         auto f = File("dub.sdl", "r");
         foreach (line; f.byLine())
         {
