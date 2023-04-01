@@ -97,6 +97,21 @@ auto message = "single code block";
 writeln(message);
 ```
 
+### dubのビルドオプションサポート
+
+ツールによる実行(`dub run`)に渡すことができるいくつかのオプションをサポートしています。
+これらのオプションは、指定された値をそのまま `dub run` の引数として渡します。
+
+1. `--build`
+2. `--compiler`
+3. `--arch`
+
+__例__
+
+```
+dub run md -- README.md --build=release --compiler=ldc2 --arch=x86_64
+```
+
 ### 既定のパッケージ参照
 
 ライブラリのREADMEなどをサポートするため、実行時のカレントディレクトリがdubパッケージであった場合、自動的に `dub` プロジェクトとしての依存関係が追加されます。（これは `dub.sdl` に `path` ベースの `dependency` が追加されます）

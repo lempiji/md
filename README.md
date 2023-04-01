@@ -97,6 +97,21 @@ auto message = "single code block";
 writeln(message);
 ```
 
+### dub Build Options Support
+
+The tool supports several options that can be passed to the execution (`dub run`). These options are directly passed as arguments to `dub run`.
+
+1. `--build`
+2. `--compiler`
+3. `--arch`
+
+__Example__
+
+```
+dub run md -- README.md --build=release --compiler=ldc2 --arch=x86_64
+```
+
+
 ### Current package reference
 
 If the current directory is a dub package, the dependency will be automatically added. (using a `"path"` based dependency)
