@@ -33,3 +33,11 @@ jobs:
         # Build the project, with its main file included, without unittests
         dub run md --compiler=$DC -- README.md
         dub run md --compiler=$DC -- README.ja.md
+
+    - name: 'Test Examples with options'
+      run: |
+        # Build the project, with its main file included, without unittests
+        dub run md --compiler=$DC -- examples/test-build.md --build=release
+        dub run md --compiler=$DC -- examples/test-compiler.md --compiler=$DC
+        dub run md --compiler=$DC -- examples/test-build.md --build=release --compiler=$DC
+        dub run md --compiler=$DC -- examples/test-compiler.md --build=release --compiler=$DC
