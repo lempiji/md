@@ -34,6 +34,10 @@ struct DefaultCommand
         @ArgNamed("dubsdl", "Adds a dub.sdl package recipe line into the generated D source file.")
         @(ArgConfig.aggregate | ArgConfig.optional)
         string[] dubInstructions;
+
+        @ArgNamed("compiler", "Specifies the compiler binary to use. (dmd, gdc, ldc2, gdmd, ldmd)")
+        @(ArgConfig.optional)
+        Nullable!string compiler;
     }
 
     int onExecute()
@@ -95,6 +99,8 @@ struct DefaultCommand
         }
 
         // evaluate all
+        auto runSettings = DubRunSettings(compiler);
+
         size_t totalCount;
         size_t errorCount;
         foreach (key, value; blocks)
@@ -106,7 +112,7 @@ struct DefaultCommand
                 if (!quiet)
                     writeln("end: ", key);
 
-            const status = evaluate(value.data, dubInstructions, BlockType.Single, verbose);
+            const status = evaluate(value.data, dubInstructions, BlockType.Single, runSettings, verbose);
             errorCount += status != 0;
         }
 
@@ -119,7 +125,7 @@ struct DefaultCommand
                 if (!quiet)
                     writeln("end single: ", i);
 
-            const status = evaluate(source, dubInstructions, BlockType.Single, verbose);
+            const status = evaluate(source, dubInstructions, BlockType.Single, runSettings, verbose);
             errorCount += status != 0;
         }
 
@@ -132,7 +138,7 @@ struct DefaultCommand
                 if (!quiet)
                     writeln("end global :", i);
 
-            const status = evaluate(source, dubInstructions, BlockType.Global, verbose);
+            const status = evaluate(source, dubInstructions, BlockType.Global, runSettings, verbose);
             errorCount += status != 0;
         }
 
@@ -308,7 +314,21 @@ enum BlockType
     Global,
 }
 
-int evaluate(string source, string[] dubInstructions, BlockType type, bool verbose)
+struct DubRunSettings
+{
+    Nullable!string compiler;
+
+    void appendAdditionalArgs(ref string[] args)
+    {
+        if (!compiler.isNull())
+        {
+            args ~= "--compiler";
+            args ~= compiler.get();
+        }
+    }
+}
+
+int evaluate(string source, string[] dubInstructions, BlockType type, DubRunSettings settings, bool verbose)
 {
     import std.conv : text, to;
     import std.digest : toHexString;
@@ -355,12 +375,15 @@ int evaluate(string source, string[] dubInstructions, BlockType type, bool verbo
         sourceFile.flush();
     }
 
-    string[] args = verbose ? [
-            "dub", "run", "--single", "--root", workDir, filename
-        ]
-        : [
-            "dub", "run", "--quiet", "--single", "--root", workDir, filename
-        ];
+    string[] args = ["dub", "run", "--single"];
+    if (!verbose)
+        args ~= "--quiet";
+
+    // compiler
+    settings.appendAdditionalArgs(args);
+
+    args ~= ["--root", workDir, filename];
+
     if (verbose)
         writeln("dub args: ", args);
 
