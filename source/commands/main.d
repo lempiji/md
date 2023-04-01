@@ -35,6 +35,10 @@ struct DefaultCommand
         @(ArgConfig.aggregate | ArgConfig.optional)
         string[] dubInstructions;
 
+        @ArgNamed("build", "Specifies the type of build to perform. (debug, release, unittest, profile, cov, etc.)")
+        @(ArgConfig.optional)
+        Nullable!string build;
+
         @ArgNamed("compiler", "Specifies the compiler binary to use. (dmd, gdc, ldc2, gdmd, ldmd)")
         @(ArgConfig.optional)
         Nullable!string compiler;
@@ -103,7 +107,7 @@ struct DefaultCommand
         }
 
         // evaluate all
-        auto runSettings = DubRunSettings(compiler, arch);
+        auto runSettings = DubRunSettings(build, compiler, arch);
 
         size_t totalCount;
         size_t errorCount;
@@ -320,11 +324,18 @@ enum BlockType
 
 struct DubRunSettings
 {
+    Nullable!string build;
     Nullable!string compiler;
     Nullable!string arch;
 
     void appendAdditionalArgs(ref string[] args)
     {
+        if (!build.isNull())
+        {
+            args ~= "--build";
+            args ~= build.get();
+        }
+
         if (!compiler.isNull())
         {
             args ~= "--compiler";
