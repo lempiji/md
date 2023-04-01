@@ -38,6 +38,10 @@ struct DefaultCommand
         @ArgNamed("compiler", "Specifies the compiler binary to use. (dmd, gdc, ldc2, gdmd, ldmd)")
         @(ArgConfig.optional)
         Nullable!string compiler;
+
+        @ArgNamed("arch", "Force a different architecture (e.g. x86 or x86_64)")
+        @(ArgConfig.optional)
+        Nullable!string arch;
     }
 
     int onExecute()
@@ -99,7 +103,7 @@ struct DefaultCommand
         }
 
         // evaluate all
-        auto runSettings = DubRunSettings(compiler);
+        auto runSettings = DubRunSettings(compiler, arch);
 
         size_t totalCount;
         size_t errorCount;
@@ -317,6 +321,7 @@ enum BlockType
 struct DubRunSettings
 {
     Nullable!string compiler;
+    Nullable!string arch;
 
     void appendAdditionalArgs(ref string[] args)
     {
@@ -324,6 +329,12 @@ struct DubRunSettings
         {
             args ~= "--compiler";
             args ~= compiler.get();
+        }
+
+        if (!arch.isNull())
+        {
+            args ~= "--arch";
+            args ~= arch.get();
         }
     }
 }
@@ -379,7 +390,7 @@ int evaluate(string source, string[] dubInstructions, BlockType type, DubRunSett
     if (!verbose)
         args ~= "--quiet";
 
-    // compiler
+    // compiler, arch
     settings.appendAdditionalArgs(args);
 
     args ~= ["--root", workDir, filename];
