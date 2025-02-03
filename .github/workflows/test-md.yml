@@ -41,3 +41,10 @@ jobs:
         dub run md --compiler=$DC -- examples/test-compiler.md --compiler=$DC
         dub run md --compiler=$DC -- examples/test-build.md --build=release --compiler=$DC
         dub run md --compiler=$DC -- examples/test-compiler.md --build=release --compiler=$DC
+
+    - name: 'Run filter tests'
+      run: dub run md -- examples/test-filter.md --filter test1
+    - name: 'Run multiple filters tests'
+      run: dub run md -- examples/test-filter-multiple.md --filter test1 --filter test2
+    - name: 'Run no matching filter tests'
+      run: dub run md -- examples/test-filter-multiple.md --filter test100

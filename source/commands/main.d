@@ -43,6 +43,10 @@ struct DefaultCommand
         @(ArgConfig.optional)
         Nullable!string compiler;
 
+        @ArgNamed("filter", "Filter blocks by name")
+        @(ArgConfig.aggregate | ArgConfig.optional)
+        string[] filters;
+
         @ArgNamed("arch", "Force a different architecture (e.g. x86 or x86_64)")
         @(ArgConfig.optional)
         Nullable!string arch;
@@ -50,6 +54,11 @@ struct DefaultCommand
 
     int onExecute()
     {
+        if (filters.length > 0)
+        {
+            writeln("Filtering blocks by: ", filters);
+        }
+
         if (!dubInstructions.length)
         {
             dubInstructions = [];
@@ -86,6 +95,9 @@ struct DefaultCommand
             {
                 if (isDisabledBlock(block))
                     continue;
+                if (!isFilteredBlock(block, filters))
+                    continue;
+
                 if (isSingleBlock(block))
                 {
                     singleBlocks ~= block.code[].to!string();
@@ -300,6 +312,21 @@ bool isGlobalBlock(const ref Code code)
     {
         return true;
     }
+    return false;
+}
+
+bool isFilteredBlock(const ref Code code, string[] filters)
+{
+    auto blockName = getBlockName(code);
+
+    foreach (filterName; filters)
+    {
+        if (blockName == filterName)
+        {
+            return true;
+        }
+    }
+
     return false;
 }
 
