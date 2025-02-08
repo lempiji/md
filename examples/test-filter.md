@@ -1,7 +1,7 @@
 __command__
 
 ```
-dub run -- examples/filter_example.md --filter test1
+dub run -- examples/test-filter.md --filter test1
 ```
 
 __test code__

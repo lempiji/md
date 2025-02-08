@@ -79,6 +79,35 @@ writeln(buf);
 
 `name` 指定がない場合は `main` という名前として扱われます。
 
+#### 名前フィルター
+
+`--filter` オプションを指定することで、特定の名前を持つコードブロックのみを実行することができます。
+
+__例__
+
+~~~
+```d name=filter_test
+```
+~~~
+
+```
+dub run md -- README.md --filter=filter_test --filter=filter_test2
+```
+
+```d name=filter_test
+import std;
+
+auto message = "filter test";
+writeln(message);
+```
+
+```d name=filter_test2
+import std;
+
+auto message2 = "another filter test";
+writeln(message2);
+```
+
 ### 独立実行
 
 1つのコードブロックを他のブロックと結合せず、独立して実行させるためには `single` という属性を付与します。

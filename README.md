@@ -79,6 +79,35 @@ writeln(buf);
 
 If `name` is not specified, it is treated as the name `main`.
 
+#### Name filter
+
+By specifying the `--filter` option, you can execute only code blocks with specific names.
+
+~~~
+```d name=filter_test
+```
+~~~
+
+```
+dub run md -- README.md --filter=filter_test --filter=filter_test2
+```
+
+```d name=filter_test
+import std;
+
+auto message = "filter test";
+writeln(message);
+```
+
+```d name=filter_test2
+import std;
+
+auto message2 = "another filter test";
+writeln(message2);
+```
+
+
+
 ### Scoped block
 
 To make a single block of code run independently without being combined with other blocks, give it the attribute `single`.

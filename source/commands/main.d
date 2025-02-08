@@ -95,7 +95,7 @@ struct DefaultCommand
             {
                 if (isDisabledBlock(block))
                     continue;
-                if (!isFilteredBlock(block, filters))
+                if (filters.length > 0 && !isFilteredBlock(block, filters))
                     continue;
 
                 if (isSingleBlock(block))
