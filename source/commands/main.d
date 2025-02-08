@@ -380,7 +380,7 @@ struct DubRunSettings
 int evaluate(string source, string[] dubInstructions, BlockType type, DubRunSettings settings, bool verbose)
 {
     import std.conv : text, to;
-    import std.digest : toHexString;
+    import std.digest : toHexString, LetterCase;
     import std.digest.murmurhash : MurmurHash3;
     import std.file : chdir, mkdirRecurse, remove, tempDir, write;
     import std.path : buildNormalizedPath;
@@ -396,7 +396,7 @@ int evaluate(string source, string[] dubInstructions, BlockType type, DubRunSett
     hasher.put(dubInstructions.join("\n").representation);
     auto hash = hasher.finish();
 
-    auto moduleName = text("md_", hash.toHexString());
+    auto moduleName = text("md_", hash.toHexString!(LetterCase.lower)());
     auto filename = moduleName ~ ".d";
     auto tempFilePath = buildNormalizedPath(workDir, filename);
     if (verbose)
