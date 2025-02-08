@@ -43,13 +43,13 @@ struct DefaultCommand
         @(ArgConfig.optional)
         Nullable!string compiler;
 
-        @ArgNamed("filter", "Filter blocks by name")
-        @(ArgConfig.aggregate | ArgConfig.optional)
-        string[] filters;
-
         @ArgNamed("arch", "Force a different architecture (e.g. x86 or x86_64)")
         @(ArgConfig.optional)
         Nullable!string arch;
+
+        @ArgNamed("filter", "Filter blocks by name")
+        @(ArgConfig.aggregate | ArgConfig.optional)
+        string[] filters;
     }
 
     int onExecute()
