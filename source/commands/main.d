@@ -50,6 +50,10 @@ struct DefaultCommand
         @ArgNamed("filter", "Filter blocks by name")
         @(ArgConfig.aggregate | ArgConfig.optional)
         string[] filters;
+
+        @ArgNamed("buildOnly|no-run|dry-build", "Build the code without running it")
+        @(ArgConfig.parseAsFlag)
+        bool buildOnly;
     }
 
     int onExecute()
@@ -132,7 +136,7 @@ struct DefaultCommand
                 if (!quiet)
                     writeln("end: ", key);
 
-            const status = evaluate(value.data, dubInstructions, BlockType.Single, runSettings, verbose);
+            const status = evaluate(value.data, dubInstructions, BlockType.Single, runSettings, verbose, buildOnly);
             errorCount += status != 0;
         }
 
@@ -145,7 +149,7 @@ struct DefaultCommand
                 if (!quiet)
                     writeln("end single: ", i);
 
-            const status = evaluate(source, dubInstructions, BlockType.Single, runSettings, verbose);
+            const status = evaluate(source, dubInstructions, BlockType.Single, runSettings, verbose, buildOnly);
             errorCount += status != 0;
         }
 
@@ -158,7 +162,7 @@ struct DefaultCommand
                 if (!quiet)
                     writeln("end global :", i);
 
-            const status = evaluate(source, dubInstructions, BlockType.Global, runSettings, verbose);
+            const status = evaluate(source, dubInstructions, BlockType.Global, runSettings, verbose, buildOnly);
             errorCount += status != 0;
         }
 
@@ -377,7 +381,7 @@ struct DubRunSettings
     }
 }
 
-int evaluate(string source, string[] dubInstructions, BlockType type, DubRunSettings settings, bool verbose)
+int evaluate(string source, string[] dubInstructions, BlockType type, DubRunSettings settings, bool verbose, bool skipRun)
 {
     import std.conv : text, to;
     import std.digest : toHexString, LetterCase;
@@ -424,7 +428,7 @@ int evaluate(string source, string[] dubInstructions, BlockType type, DubRunSett
         sourceFile.flush();
     }
 
-    string[] args = ["dub", "run", "--single"];
+    string[] args = ["dub", skipRun ? "build" : "run", "--single"];
     if (!verbose)
         args ~= "--quiet";
 
