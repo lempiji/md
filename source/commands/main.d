@@ -51,7 +51,7 @@ struct DefaultCommand
         @(ArgConfig.aggregate | ArgConfig.optional)
         string[] filters;
 
-        @ArgNamed("buildOnly|no-run|dry-build", "Build the code without running it")
+        @ArgNamed("buildOnly|no-run", "Build the code without running it")
         @(ArgConfig.parseAsFlag)
         bool buildOnly;
     }
