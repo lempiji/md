@@ -91,6 +91,7 @@ struct DefaultCommand
         auto result = parseMarkdown(filepath);
 
         Appender!(string)[string] blocks;
+        string[] orderedNames;
         string[] singleBlocks;
         string[] globalBlocks;
         foreach (block; result.blocks)
@@ -99,9 +100,6 @@ struct DefaultCommand
             {
                 if (isDisabledBlock(block))
                     continue;
-                if (filters.length > 0 && !isFilteredBlock(block, filters))
-                    continue;
-
                 if (isSingleBlock(block))
                 {
                     singleBlocks ~= block.code[].to!string();
@@ -113,12 +111,23 @@ struct DefaultCommand
                     continue;
                 }
 
-                auto name = getBlockName(block);
-                if (!(name in blocks))
+                auto names = getBlockNames(block);
+                if (filters.length > 0)
                 {
-                    blocks[name] = appender!string;
+                    names = filterBlockNames(names, filters);
+                    if (names.length == 0)
+                        continue;
                 }
-                blocks[name].put(block.code[]);
+
+                foreach (name; names)
+                {
+                    if (!(name in blocks))
+                    {
+                        blocks[name] = appender!string;
+                        orderedNames ~= name;
+                    }
+                    blocks[name].put(block.code[]);
+                }
             }
         }
 
@@ -127,16 +136,16 @@ struct DefaultCommand
 
         size_t totalCount;
         size_t errorCount;
-        foreach (key, value; blocks)
+        foreach (name; orderedNames)
         {
             totalCount++;
             if (!quiet)
-                writeln("begin: ", key);
+                writeln("begin: ", name);
             scope (exit)
                 if (!quiet)
-                    writeln("end: ", key);
+                    writeln("end: ", name);
 
-            const status = evaluate(value.data, dubInstructions, BlockType.Single, runSettings, verbose, buildOnly);
+            const status = evaluate(blocks[name].data, dubInstructions, BlockType.Single, runSettings, verbose, buildOnly);
             errorCount += status != 0;
         }
 
@@ -321,30 +330,90 @@ bool isGlobalBlock(const ref Code code)
 
 bool isFilteredBlock(const ref Code code, string[] filters)
 {
-    auto blockName = getBlockName(code);
+    return filterBlockNames(getBlockNames(code), filters).length > 0;
+}
 
-    foreach (filterName; filters)
+string[] getBlockNames(const ref Code code)
+{
+    import std.regex : regex, matchAll;
+
+    auto pat = regex(`(?<=^|\s)name=(\w+)(?=\s|$)`);
+    bool[string] seen;
+    string[] names;
+
+    foreach (m; matchAll(code.info, pat))
     {
-        if (blockName == filterName)
+        if (m[1].length != 0)
         {
-            return true;
+            auto name = m[1].idup;
+            if (name in seen)
+                continue;
+
+            seen[name] = true;
+            names ~= name;
         }
     }
 
-    return false;
+    if (names.length == 0)
+        names ~= "main";
+
+    return names;
 }
 
-string getBlockName(const ref Code code)
+string[] filterBlockNames(string[] blockNames, string[] filters)
 {
-    import std.regex : regex, matchFirst;
-
-    auto pat = regex(`(?<=^|\s)name=(\w+)(?=\s|$)`);
-    if (auto m = matchFirst(code.info, pat))
+    string[] result;
+    foreach (name; blockNames)
     {
-        if (m[1].length != 0)
-            return m[1].idup;
+        foreach (filterName; filters)
+        {
+            if (name == filterName)
+            {
+                result ~= name;
+                break;
+            }
+        }
     }
-    return "main";
+
+    return result;
+}
+
+unittest
+{
+    Code block;
+    block.info = "name=test1 name=test2";
+    assert(getBlockNames(block) == ["test1", "test2"]);
+}
+
+unittest
+{
+    Code block;
+    block.info = "name=test1 name=test1";
+    assert(getBlockNames(block) == ["test1"]);
+}
+
+unittest
+{
+    Code block;
+    block.info = "single global";
+    assert(getBlockNames(block) == ["main"]);
+}
+
+unittest
+{
+    Code block;
+    block.info = "name=test1 name=test2";
+    assert(filterBlockNames(getBlockNames(block), ["test1"]) == ["test1"]);
+    assert(filterBlockNames(getBlockNames(block), ["test2"]) == ["test2"]);
+    assert(filterBlockNames(getBlockNames(block), ["test3"]).length == 0);
+}
+
+unittest
+{
+    Code block;
+    block.info = "name=test1 name=test2";
+    assert(isFilteredBlock(block, ["test2"]));
+    assert(!isFilteredBlock(block, ["test3"]));
 }
 
 enum BlockType
