@@ -25,7 +25,7 @@ dub run md -- --help
 
 ## 機能概要
 
-言語に `d` または `D` と指定されているコードブロックが実行されます。
+言語に `d`, `D`, `sh`, `bash` と指定されているコードブロックが実行されます。
 
 ### ブロックの結合
 
@@ -135,6 +135,44 @@ writeln("multi-name test1");
 writeln("multi-name test2");
 ```
 
+### シェルブロック
+
+`sh` と `bash` のブロックも、Dと同じ `name` と `--filter` のルールで実行されます。
+`name` 省略時は `main` 扱いで、1つのブロックに複数の `name` も指定できます。
+
+~~~
+```sh name=shell_sample
+```
+~~~
+
+```
+dub run md -- README.md --filter=shell_sample
+dub run md -- README.md --filter=bash_sample
+```
+
+```sh name=shell_sample
+shared_shell="from-sh"
+echo "sh:${shared_shell}"
+```
+
+```bash name=shell_sample name=bash_sample
+shared_bash="from-bash"
+```
+
+```bash name=bash_sample
+parts=("A" "B")
+echo "bash:${shared_bash}:${parts[1]}"
+```
+
+実行方式:
+1. `sh` ブロックは `sh -eu <temp_script_path>` で実行
+2. `bash` ブロックは `bash -eu -o pipefail <temp_script_path>` で実行
+3. 実行時のカレントディレクトリは `md` コマンドを起動したディレクトリ
+4. 終了コードが0以外なら失敗扱い
+5. `--build`, `--compiler`, `--arch`, `--dependency`, `--dubsdl` はD実行にのみ適用
+6. `--buildOnly` 指定時はシェルスクリプト実行をスキップ
+7. `--show-lang` を指定すると begin/end ラベルを `<language>:<block-name>` 形式で表示（既定は従来形式）
+
 ### 独立実行
 
 1つのコードブロックを他のブロックと結合せず、独立して実行させるためには `single` という属性を付与します。
@@ -219,7 +257,14 @@ void main()
 
 ### 実行時の仕組み
 
-tempディレクトリに `.md` ディレクトリを作り、dubのシングルファイル形式のソースを生成、 `dub run --single md_xxx.md` といったコマンドで実行します。
+tempディレクトリに `.md` ディレクトリを作り、実行単位ごとの一時ファイルを生成して実行します。
+
+言語ごとの実行方式:
+1. D: dubのシングルファイル形式ソースを生成し、 `dub run --single md_xxx.d` で実行（`--buildOnly` 時は `dub build --single ...`）
+2. sh: スクリプトを生成し、 `sh -eu md_xxx.sh` で実行
+3. bash: スクリプトを生成し、 `bash -eu -o pipefail md_xxx.sh` で実行
+
+名前付きブロックは `language + name` 単位で結合され、 `--filter` 指定時は対象nameのみ実行されます。
 
 また、既定のパッケージ参照を実現するため、ソースの先頭に以下のようなコメントを自動的に付与します。
 
