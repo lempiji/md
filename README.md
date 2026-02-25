@@ -25,7 +25,7 @@ dub run md -- --help
 
 ## Features
 
-The code block whose language is specified as `d` or `D` will be executed.
+The code block whose language is specified as `d`, `D`, `sh`, or `bash` will be executed.
 
 ### Combine blocks
 
@@ -133,6 +133,44 @@ writeln("multi-name test1");
 writeln("multi-name test2");
 ```
 
+### Shell blocks
+
+`sh` and `bash` blocks are executed with the same `name` and `--filter` rules as D blocks.
+The default name is `main`, and a single block can have multiple names.
+
+~~~
+```sh name=shell_sample
+```
+~~~
+
+```
+dub run md -- README.md --filter=shell_sample
+dub run md -- README.md --filter=bash_sample
+```
+
+```sh name=shell_sample
+shared_shell="from-sh"
+echo "sh:${shared_shell}"
+```
+
+```bash name=shell_sample name=bash_sample
+shared_bash="from-bash"
+```
+
+```bash name=bash_sample
+parts=("A" "B")
+echo "bash:${shared_bash}:${parts[1]}"
+```
+
+Execution details:
+1. `sh` blocks run as `sh -eu <temp_script_path>`
+2. `bash` blocks run as `bash -eu -o pipefail <temp_script_path>`
+3. Scripts are executed from the current working directory where `md` is launched
+4. Non-zero exit code is treated as an error
+5. `--build`, `--compiler`, `--arch`, `--dependency`, and `--dubsdl` apply only to D execution
+6. `--buildOnly` skips shell script execution
+7. `--show-lang` prints language-aware begin/end labels as `<language>:<block-name>` (default keeps the original label format)
+
 
 
 ### Scoped block
@@ -218,7 +256,14 @@ void main()
 
 ### How it works
 
-Create a `.md` directory in the temp directory, generate the source in dub single file format, and run it with a command like `dub run --single md_xxx.md`.
+Create a `.md` directory in the temp directory and generate temporary files for each execution unit.
+
+Execution model by language:
+1. D: generate a dub single-file source and run it with `dub run --single md_xxx.d` (or `dub build --single ...` with `--buildOnly`)
+2. sh: generate a script file and run `sh -eu md_xxx.sh`
+3. bash: generate a script file and run `bash -eu -o pipefail md_xxx.sh`
+
+Named blocks are combined by `language + name` before execution, and `--filter` narrows the target names.
 
 It also automatically adds the following comment to the beginning of the source to achieve default package references.
 

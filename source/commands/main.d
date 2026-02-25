@@ -27,6 +27,10 @@ struct DefaultCommand
         @(ArgConfig.parseAsFlag)
         bool verbose;
 
+        @ArgNamed("show-lang", "Print language prefix for begin/end logs")
+        @(ArgConfig.parseAsFlag)
+        bool showLanguage;
+
         @ArgNamed("dependency|d", "Adds a DUB dependency into the D source. May be either in format `name` (version \"*\") or `name@version` to download an exact version or version range.")
         @(ArgConfig.aggregate | ArgConfig.optional)
         string[] dubDependencies;
@@ -90,44 +94,47 @@ struct DefaultCommand
         string filepath = !file.isNull ? file.get() : "README.md";
         auto result = parseMarkdown(filepath);
 
-        Appender!(string)[string] blocks;
-        string[] orderedNames;
+        Appender!(string)[string] namedBlocks;
+        NamedExecutionUnit[] orderedUnits;
         string[] singleBlocks;
         string[] globalBlocks;
         foreach (block; result.blocks)
         {
-            if (block.lang == "d" || block.lang == "D")
+            if (isDisabledBlock(block))
+                continue;
+
+            auto language = normalizeLanguage(block.lang);
+            if (!isSupportedLanguage(language))
+                continue;
+
+            if (isDLanguage(language) && isSingleBlock(block))
             {
-                if (isDisabledBlock(block))
-                    continue;
-                if (isSingleBlock(block))
-                {
-                    singleBlocks ~= block.code[].to!string();
-                    continue;
-                }
-                if (isGlobalBlock(block))
-                {
-                    globalBlocks ~= block.code[].to!string();
-                    continue;
-                }
+                singleBlocks ~= block.code[].to!string();
+                continue;
+            }
+            if (isDLanguage(language) && isGlobalBlock(block))
+            {
+                globalBlocks ~= block.code[].to!string();
+                continue;
+            }
 
-                auto names = getBlockNames(block);
-                if (filters.length > 0)
-                {
-                    names = filterBlockNames(names, filters);
-                    if (names.length == 0)
-                        continue;
-                }
+            auto names = getBlockNames(block);
+            if (filters.length > 0)
+            {
+                names = filterBlockNames(names, filters);
+                if (names.length == 0)
+                    continue;
+            }
 
-                foreach (name; names)
+            foreach (name; names)
+            {
+                const key = makeUnitKey(language, name);
+                if (!(key in namedBlocks))
                 {
-                    if (!(name in blocks))
-                    {
-                        blocks[name] = appender!string;
-                        orderedNames ~= name;
-                    }
-                    blocks[name].put(block.code[]);
+                    namedBlocks[key] = appender!string;
+                    orderedUnits ~= NamedExecutionUnit(language, name);
                 }
+                namedBlocks[key].put(block.code[]);
             }
         }
 
@@ -136,42 +143,54 @@ struct DefaultCommand
 
         size_t totalCount;
         size_t errorCount;
-        foreach (name; orderedNames)
+        foreach (unit; orderedUnits)
         {
             totalCount++;
+            auto namedLabel = formatNamedLogLabel(unit.language, unit.name, showLanguage);
             if (!quiet)
-                writeln("begin: ", name);
+                writeln("begin: ", namedLabel);
             scope (exit)
                 if (!quiet)
-                    writeln("end: ", name);
+                    writeln("end: ", namedLabel);
 
-            const status = evaluate(blocks[name].data, dubInstructions, BlockType.Single, runSettings, verbose, buildOnly);
+            const source = namedBlocks[makeUnitKey(unit.language, unit.name)].data;
+            int status;
+            if (isDLanguage(unit.language))
+            {
+                status = evaluateD(source, dubInstructions, BlockType.Single, runSettings, verbose, buildOnly);
+            }
+            else
+            {
+                status = evaluateShell(source, unit.language, verbose, buildOnly);
+            }
             errorCount += status != 0;
         }
 
         foreach (i, source; singleBlocks)
         {
             totalCount++;
+            auto singleLabel = formatDIndexedLogLabel(i, showLanguage);
             if (!quiet)
-                writeln("begin single: ", i);
+                writeln("begin single: ", singleLabel);
             scope (exit)
                 if (!quiet)
-                    writeln("end single: ", i);
+                    writeln("end single: ", singleLabel);
 
-            const status = evaluate(source, dubInstructions, BlockType.Single, runSettings, verbose, buildOnly);
+            const status = evaluateD(source, dubInstructions, BlockType.Single, runSettings, verbose, buildOnly);
             errorCount += status != 0;
         }
 
         foreach (i, source; globalBlocks)
         {
             totalCount++;
+            auto globalLabel = formatDIndexedLogLabel(i, showLanguage);
             if (!quiet)
-                writeln("begin global :", i);
+                writeln("begin global :", globalLabel);
             scope (exit)
                 if (!quiet)
-                    writeln("end global :", i);
+                    writeln("end global :", globalLabel);
 
-            const status = evaluate(source, dubInstructions, BlockType.Global, runSettings, verbose, buildOnly);
+            const status = evaluateD(source, dubInstructions, BlockType.Global, runSettings, verbose, buildOnly);
             errorCount += status != 0;
         }
 
@@ -234,6 +253,44 @@ struct Code
     const(char)[] lang;
     const(char)[] info;
     Array!char code;
+}
+
+struct NamedExecutionUnit
+{
+    string language;
+    string name;
+}
+
+string makeUnitKey(string language, string name)
+{
+    return language ~ "\x1f" ~ name;
+}
+
+string normalizeLanguage(const(char)[] language)
+{
+    if (language.length == 0)
+        return "";
+    return language.to!string.toLower();
+}
+
+bool isDLanguage(string language)
+{
+    return language == "d";
+}
+
+bool isSupportedLanguage(string language)
+{
+    return isDLanguage(language) || language == "sh" || language == "bash";
+}
+
+string formatNamedLogLabel(string language, string name, bool showLanguage)
+{
+    return showLanguage ? language ~ ":" ~ name : name;
+}
+
+string formatDIndexedLogLabel(size_t index, bool showLanguage)
+{
+    return showLanguage ? "d:" ~ to!string(index) : to!string(index);
 }
 
 struct CodeAggregator
@@ -416,6 +473,29 @@ unittest
     assert(!isFilteredBlock(block, ["test3"]));
 }
 
+unittest
+{
+    assert(isSupportedLanguage("d"));
+    assert(isSupportedLanguage(normalizeLanguage("D")));
+    assert(isSupportedLanguage("sh"));
+    assert(isSupportedLanguage("bash"));
+    assert(!isSupportedLanguage("python"));
+    assert(normalizeLanguage("BASH") == "bash");
+}
+
+unittest
+{
+    assert(makeUnitKey("d", "main") == "d\x1fmain");
+}
+
+unittest
+{
+    assert(formatNamedLogLabel("sh", "test", false) == "test");
+    assert(formatNamedLogLabel("sh", "test", true) == "sh:test");
+    assert(formatDIndexedLogLabel(0, false) == "0");
+    assert(formatDIndexedLogLabel(1, true) == "d:1");
+}
+
 enum BlockType
 {
     Single,
@@ -450,15 +530,15 @@ struct DubRunSettings
     }
 }
 
-int evaluate(string source, string[] dubInstructions, BlockType type, DubRunSettings settings, bool verbose, bool skipRun)
+int evaluateD(string source, string[] dubInstructions, BlockType type, DubRunSettings settings, bool verbose, bool skipRun)
 {
     import std.conv : text, to;
     import std.digest : toHexString, LetterCase;
     import std.digest.murmurhash : MurmurHash3;
-    import std.file : chdir, mkdirRecurse, remove, tempDir, write;
+    import std.file : mkdirRecurse, tempDir;
     import std.path : buildNormalizedPath;
     import std.process : spawnProcess, wait;
-    import std.stdio : stderr, stdin, stdout;
+    import std.stdio : stdin, stdout;
 
     auto workDir = buildNormalizedPath(tempDir(), ".md");
     mkdirRecurse(workDir);
@@ -510,6 +590,62 @@ int evaluate(string source, string[] dubInstructions, BlockType type, DubRunSett
         writeln("dub args: ", args);
 
     auto result = spawnProcess(args, stdin, stdout);
+    return wait(result);
+}
+
+int evaluateShell(string source, string shellKind, bool verbose, bool skipRun)
+{
+    import std.conv : text;
+    import std.digest : toHexString, LetterCase;
+    import std.digest.murmurhash : MurmurHash3;
+    import std.file : mkdirRecurse, tempDir;
+    import std.path : buildNormalizedPath;
+    import std.process : spawnProcess, wait;
+    import std.stdio : stdin, stdout, stderr;
+
+    auto workDir = buildNormalizedPath(tempDir(), ".md");
+    mkdirRecurse(workDir);
+
+    MurmurHash3!128 hasher;
+    hasher.start();
+    hasher.put(source.representation);
+    hasher.put(shellKind.representation);
+    auto hash = hasher.finish();
+
+    auto scriptName = text("md_", hash.toHexString!(LetterCase.lower)(), ".sh");
+    auto scriptPath = buildNormalizedPath(workDir, scriptName);
+    if (verbose)
+    {
+        writeln("scriptPath: ", scriptPath);
+    }
+
+    {
+        auto sourceFile = File(scriptPath, "w");
+        sourceFile.write(source);
+        sourceFile.flush();
+    }
+
+    if (skipRun)
+    {
+        if (verbose)
+            writeln("skip run for ", shellKind, " script by --buildOnly");
+        return 0;
+    }
+
+    string[] args;
+    if (shellKind == "bash")
+    {
+        args = ["bash", "-eu", "-o", "pipefail", scriptPath];
+    }
+    else
+    {
+        args = ["sh", "-eu", scriptPath];
+    }
+
+    if (verbose)
+        writeln("shell args: ", args);
+
+    auto result = spawnProcess(args, stdin, stdout, stderr);
     return wait(result);
 }
 
