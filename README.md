@@ -106,6 +106,33 @@ auto message2 = "another filter test";
 writeln(message2);
 ```
 
+#### Multiple names
+
+You can assign multiple `name` attributes to a single code block.
+That block will be included in every matching named block.
+
+~~~
+```d name=multi_name_test1 name=multi_name_test2
+```
+~~~
+
+```
+dub run md -- README.md --filter=multi_name_test1
+dub run md -- README.md --filter=multi_name_test2
+```
+
+```d name=multi_name_test1 name=multi_name_test2
+import std.stdio;
+```
+
+```d name=multi_name_test1
+writeln("multi-name test1");
+```
+
+```d name=multi_name_test2
+writeln("multi-name test2");
+```
+
 
 
 ### Scoped block

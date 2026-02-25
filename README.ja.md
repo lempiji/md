@@ -108,6 +108,33 @@ auto message2 = "another filter test";
 writeln(message2);
 ```
 
+#### 複数の名前指定
+
+1つのコードブロックに対して、複数の `name` 属性を指定できます。
+このブロックは、指定したすべての名前のブロックに取り込まれます。
+
+~~~
+```d name=multi_name_test1 name=multi_name_test2
+```
+~~~
+
+```
+dub run md -- README.md --filter=multi_name_test1
+dub run md -- README.md --filter=multi_name_test2
+```
+
+```d name=multi_name_test1 name=multi_name_test2
+import std.stdio;
+```
+
+```d name=multi_name_test1
+writeln("multi-name test1");
+```
+
+```d name=multi_name_test2
+writeln("multi-name test2");
+```
+
 ### 独立実行
 
 1つのコードブロックを他のブロックと結合せず、独立して実行させるためには `single` という属性を付与します。
