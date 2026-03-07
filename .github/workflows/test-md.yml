@@ -54,7 +54,7 @@ jobs:
         dub run md -- examples/test-shell.md --filter sh_test
         dub run md -- examples/test-shell.md --filter bash_test
     - name: 'Run literate task sample'
-      run: HOME=/tmp dub run md -- README.md --filter check_tmp
+      run: HOME=/tmp dub run md -- CONTRIBUTING.md --filter check_tmp
     - name: 'Shell log format tests'
       run: bash scripts/test/test-log-format.sh
     - name: 'Shell behavior tests'
