@@ -55,3 +55,7 @@ jobs:
         dub run md -- examples/test-shell.md --filter bash_test
     - name: 'Oracle log format tests'
       run: bash examples/oracle-log-format.sh
+    - name: 'Oracle shell behavior tests'
+      run: |
+        dub build --compiler=$DC
+        bash examples/oracle-shell-behavior.sh

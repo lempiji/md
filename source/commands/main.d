@@ -632,21 +632,42 @@ int evaluateShell(string source, string shellKind, bool verbose, bool skipRun)
         return 0;
     }
 
-    string[] args;
-    if (shellKind == "bash")
-    {
-        args = ["bash", "-eu", "-o", "pipefail", scriptPath];
-    }
-    else
-    {
-        args = ["sh", "-eu", scriptPath];
-    }
+    const args = shellExecutionArgs(shellKind, scriptPath);
 
     if (verbose)
         writeln("shell args: ", args);
 
-    auto result = spawnProcess(args, stdin, stdout, stderr);
-    return wait(result);
+    try
+    {
+        auto result = spawnProcess(args, stdin, stdout, stderr);
+        return wait(result);
+    }
+    catch (Exception e)
+    {
+        stderr.writeln("failed to start ", shellKind,
+            " interpreter. Ensure `", args[0], "` is available on PATH. ", e.msg);
+        return 1;
+    }
+}
+
+string[] shellExecutionArgs(string shellKind, string scriptPath)
+{
+    if (shellKind == "bash")
+        return ["bash", "-eu", "-o", "pipefail", scriptPath];
+
+    return ["sh", "-eu", scriptPath];
+}
+
+unittest
+{
+    assert(shellExecutionArgs("sh", "/tmp/test.sh") == ["sh", "-eu", "/tmp/test.sh"]);
+    assert(shellExecutionArgs("bash", "/tmp/test.sh") == [
+        "bash",
+        "-eu",
+        "-o",
+        "pipefail",
+        "/tmp/test.sh",
+    ]);
 }
 
 string loadCurrentProjectName()

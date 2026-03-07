@@ -167,11 +167,14 @@ echo "bash:${shared_bash}:${parts[1]}"
 実行方式:
 1. `sh` ブロックは `sh -eu <temp_script_path>` で実行
 2. `bash` ブロックは `bash -eu -o pipefail <temp_script_path>` で実行
-3. 実行時のカレントディレクトリは `md` コマンドを起動したディレクトリ
-4. 終了コードが0以外なら失敗扱い
-5. `--build`, `--compiler`, `--arch`, `--dependency`, `--dubsdl` はD実行にのみ適用
-6. `--buildOnly` 指定時はシェルスクリプト実行をスキップ
-7. `--show-lang` を指定すると begin/end ラベルを `<language>:<block-name>` 形式で表示（既定は従来形式）
+3. OS に関わらず、対応するインタプリタが `PATH` 上にある環境で実行
+4. `bash` ブロックには `bash`、`sh` ブロックには `sh` が必要
+5. 実行時のカレントディレクトリは `md` コマンドを起動したディレクトリ
+6. 終了コードが0以外なら失敗扱い
+7. インタプリタを起動できない場合も、そのブロックは失敗扱い
+8. `--build`, `--compiler`, `--arch`, `--dependency`, `--dubsdl` はD実行にのみ適用
+9. `--buildOnly` 指定時はシェルスクリプトを生成するが実行はスキップ
+10. `--show-lang` を指定すると begin/end ラベルを `<language>:<block-name>` 形式で表示（既定は従来形式）
 
 ### 独立実行
 

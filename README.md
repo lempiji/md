@@ -165,11 +165,14 @@ echo "bash:${shared_bash}:${parts[1]}"
 Execution details:
 1. `sh` blocks run as `sh -eu <temp_script_path>`
 2. `bash` blocks run as `bash -eu -o pipefail <temp_script_path>`
-3. Scripts are executed from the current working directory where `md` is launched
-4. Non-zero exit code is treated as an error
-5. `--build`, `--compiler`, `--arch`, `--dependency`, and `--dubsdl` apply only to D execution
-6. `--buildOnly` skips shell script execution
-7. `--show-lang` prints language-aware begin/end labels as `<language>:<block-name>` (default keeps the original label format)
+3. `sh`/`bash` blocks run when the corresponding interpreter is available on `PATH`, regardless of OS
+4. `bash` blocks require `bash`; `sh` blocks require `sh`
+5. Scripts are executed from the current working directory where `md` is launched
+6. Non-zero exit code is treated as an error
+7. If the interpreter cannot be started, that block is reported as an error
+8. `--build`, `--compiler`, `--arch`, `--dependency`, and `--dubsdl` apply only to D execution
+9. `--buildOnly` generates the shell script but skips executing it
+10. `--show-lang` prints language-aware begin/end labels as `<language>:<block-name>` (default keeps the original label format)
 
 
 
@@ -323,4 +326,18 @@ void main()
     auto arr = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
     auto result = arr.sum();
 }
+```
+
+## For Contributors
+
+### Build command
+
+```sh name=build
+dub build
+```
+
+### Install command
+
+```sh name=install
+dub fetch md
 ```
