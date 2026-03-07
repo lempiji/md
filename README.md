@@ -330,14 +330,60 @@ void main()
 
 ## For Contributors
 
-### Build command
+Shell blocks can also act like a small task runner.
+This README includes a literate example that replaces a small `Makefile` with named `build`, `test`, and `check` tasks.
 
-```sh name=build
-dub build
+```
+dub run md -- README.md --filter build
+dub run md -- README.md --filter test
+dub run md -- README.md --filter check
 ```
 
-### Install command
+If you see DUB cache permission errors, use the `*_tmp` variant instead.
 
-```sh name=install
-dub fetch md
+```
+dub run md -- README.md --filter build_tmp
+dub run md -- README.md --filter test_tmp
+dub run md -- README.md --filter check_tmp
+```
+
+### Literate build and test tasks
+
+```sh name=build name=test name=check
+compiler_arg=""
+if [ -n "${DC:-}" ]; then
+  compiler_arg="--compiler=$DC"
+fi
+```
+
+```sh name=build name=check
+echo "[task] build"
+dub build $compiler_arg
+```
+
+```sh name=test name=check
+echo "[task] test"
+dub test $compiler_arg
+```
+
+Run `--filter check` to execute both the build and test tasks in order.
+
+### Permission-safe build and test tasks
+
+```sh name=build_tmp name=test_tmp name=check_tmp
+export HOME=/tmp
+compiler_arg=""
+if [ -n "${DC:-}" ]; then
+  compiler_arg="--compiler=$DC"
+fi
+```
+
+```sh name=build_tmp name=check_tmp
+echo "[task] build (HOME=/tmp)"
+dub build $compiler_arg
+```
+
+```sh name=test_tmp name=check_tmp
+echo "[task] test (HOME=/tmp)"
+dub test $compiler_arg
 ```

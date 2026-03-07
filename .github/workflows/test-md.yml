@@ -53,6 +53,8 @@ jobs:
       run: |
         dub run md -- examples/test-shell.md --filter sh_test
         dub run md -- examples/test-shell.md --filter bash_test
+    - name: 'Run literate task sample'
+      run: HOME=/tmp dub run md -- README.md --filter check_tmp
     - name: 'Oracle log format tests'
       run: bash examples/oracle-log-format.sh
     - name: 'Oracle shell behavior tests'

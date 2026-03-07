@@ -328,3 +328,63 @@ void main()
     auto result = arr.sum();
 }
 ```
+
+## コントリビュータ向け
+
+`sh` ブロックは、小さな task runner や `Makefile` 代替としても使えます。
+この README には named block で `build` / `test` / `check` をまとめた literate な例を入れています。
+
+```
+dub run md -- README.md --filter build
+dub run md -- README.md --filter test
+dub run md -- README.md --filter check
+```
+
+`DUB` のキャッシュ権限エラーが出る場合は、`*_tmp` 版を使ってください。
+
+```
+dub run md -- README.md --filter build_tmp
+dub run md -- README.md --filter test_tmp
+dub run md -- README.md --filter check_tmp
+```
+
+### Literate build and test tasks
+
+```sh name=build name=test name=check
+compiler_arg=""
+if [ -n "${DC:-}" ]; then
+  compiler_arg="--compiler=$DC"
+fi
+```
+
+```sh name=build name=check
+echo "[task] build"
+dub build $compiler_arg
+```
+
+```sh name=test name=check
+echo "[task] test"
+dub test $compiler_arg
+```
+
+`--filter check` を実行すると、build と test の両方が順番に流れます。
+
+### Permission-safe build and test tasks
+
+```sh name=build_tmp name=test_tmp name=check_tmp
+export HOME=/tmp
+compiler_arg=""
+if [ -n "${DC:-}" ]; then
+  compiler_arg="--compiler=$DC"
+fi
+```
+
+```sh name=build_tmp name=check_tmp
+echo "[task] build (HOME=/tmp)"
+dub build $compiler_arg
+```
+
+```sh name=test_tmp name=check_tmp
+echo "[task] test (HOME=/tmp)"
+dub test $compiler_arg
+```
